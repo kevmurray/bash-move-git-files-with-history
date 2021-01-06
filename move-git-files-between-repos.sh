@@ -37,12 +37,14 @@ done
 
 
 
+appDir=$(dirname "$0")
+workingDir=$(pwd)
 localSourceDir="$(pwd)/${sourceRepo##*/}"
 localTargetDir="$(pwd)/${targetRepo##*/}"
 
-
 # Make a copy of the source repo and remove upstream link to prevent corruption
 echo "=== Getting source repo: $gitHost/$sourceRepo (branch $sourceBranch)"
+cd "$workingDir"
 rm -rf $localSourceDir
 git clone --branch $sourceBranch --origin origin --progress -v $gitHost/$sourceRepo || exit 1
 cd $localSourceDir
@@ -70,28 +72,28 @@ git gc --aggressive
 git prune
 git clean -fd
 
-# Move what we've decided to keep into a temp directory.
-# Temp directory to prevent conflicts if one of the files we are moving happens to have the same name as the targetDir.
+# Move what we've decided to keep into the target directory, while rewriting the history on each file.
 # And the files we're going to keep is everything in the current directory except .git (and the temp dir)
-mkdir tmp-$$
-find . -mindepth 1 -maxdepth 1 -not -name .git -not -name tmp-$$ -exec mv '{}' tmp-$$ \; || exit 1
-
-
-# Now move the temporary directory to the target directory
-mkdir -p $(dirname $targetDir) || exit 1
-mv tmp-$$ $targetDir || exit 1
-
+echo "=== Rewriting file history into the target directory"
+mkdir -p $targetDir || exit 1
+echo "$appDir/git-rewrite-history.sh -v \\" >"$workingDir/rewrite-files.sh"
+for file in $(find . -mindepth 1 -maxdepth 1 -not -name .git -not -name ${targetDir%%/*} ); do
+  echo "    $file=./$targetDir/ \\" >>"$workingDir/rewrite-files.sh"
+done
+echo "" >>"$workingDir/rewrite-files.sh"
+/bin/bash "$workingDir/rewrite-files.sh"
 
 # Commit the changes (local only, cannot push since we broke the link to the upstream repo)
 echo "=== Packaging source files for move"
 git add . || exit 1
-git commit -m "Migrate $sourceDir to $targetDir" || exit 1
+git commit -m "Migrate $sourceDir to $targetDir"
 
 cd - >/dev/null
 
 # Prepare the target repo
 echo "=== Preparing target repo: $gitHost/$targetRepo (branch $targetBranch)"
-[ -d $targetRepo ] || {
+[ -d "$localTargetDir" ] || {
+  cd "$workingDir"
   git clone --origin origin --progress -v $gitHost/$targetRepo || exit 1
 }
 cd $localTargetDir
@@ -121,6 +123,5 @@ echo "|     rm -rf $localTargetDir"
 echo "| and try again."
 echo "+----------------------------------------------------------------------------------"
 
-# clean up the mangled source repo
-rm -rf $localSourceDir
-
+# clean up the mangled source repo and working files
+rm -rf $localSourceDir $workingDir/rewrite-files.sh

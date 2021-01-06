@@ -7,8 +7,24 @@ This script was created from a lot of great content from other people, most nota
 - [Ayushya Jaiswal: Move files from one repository to another, preserving git history](https://github.com/kevmurray/bash-move-git-files-with-history)
 - [wevtimoteo/example.md](https://gist.github.com/wevtimoteo/a6f4b0837cdc3749dd6b)
 - [trongthanh/gist:2779392](https://gist.github.com/trongthanh/2779392)
+- [emiller/6769886](https://gist.github.com/emiller/6769886)
 
 My goal here was to create a script that could do basic file copies between git repos while keeping it simple enough to also copy and paste commands from it if I didn't want to do exactly what was scripted.
+
+## Problem
+
+There are a couple of related problems. The first is that moves renames don't really exist in git. Linus Torvalds has said:
+
+> A “rename” really doesn’t exist in the git model. The git model really is about tracking data, not about tracking what happened to _create_ that data.
+
+There's some tool-level support for renaming, like `git log --follow` which appears to look for a new file with similar (>90%) content to a deleted
+file then assumes that these are the same file but with different names, and assumes a move operation happened. 
+But in order to truly move a file with it's history, 
+you have to rewrite the history with the file (think of re-playing all the changes to the orginal file, only in the new location or name).
+This is true even when moving the file within the same repository.
+
+The second problem is that git repositories are independent entities, and moving files between repositories is challenging if you want to 
+keep a history of the changes from the first repository.
 
 ## Use Cases
 
@@ -76,7 +92,7 @@ Note that, in spite of the name "move" the files in the source repository are no
 ### Move a directory from one repo into another repo
 
 I need to move a subset of files into another repo. Like moving reusable code out of one repo into a library.
-This command takes 4 parameters and moves the contents (not the directory, but the contentst of the directory) to another repo
+This command takes 4 parameters and moves the contents (not the directory, but the contents of the directory) to another repo
 
 ```
 move-git-files-between-repos.sh \
@@ -129,15 +145,15 @@ You can read more details in the references mentioned above, but in a nutshell t
 1. The source repository is cloned into the current directory.
 2. The origin of the source repository is deleted (this prevents any changes from being pushed back upstream).
 3. All files that you don't want to move are deleted from the source repository.
-4. The remaining files (that you do want to move) are moved to the target directory, but in the source repository.
+4. The remaining files (that you do want to move) are moved to the target directory. 
+   This step is performed with another script that rewrites the files to preserve their history.
 5. The target repository is cloned into the current directory.
 6. The target repository has a temporary upstream origin created that points to the source repository on your machine (created in step 1).
 7. The files are pulled from the source repository using the temporary origin. This is where the magic happens and those files along with their history are imported into this repository.
 8. The temporary upstream origin to the source repository on your machine is deleted.
-9. The local source repository is deleted (since it's been irreparably mangled by steps 3 and 4).
+9.  The local source repository is deleted (since it's been irreparably mangled by steps 3 and 4).
 
 **Things to think about:**
-
 
 The script will clone both the source and target repositories into the current directory, so you should probably run it in an empty directory, 
 or at least a directory that doesn't already have those repositories in it.
@@ -155,6 +171,9 @@ When I want to do this, I copy the first 12 or so lines that define the variable
 as parameters to the script), then jump down to around line 40 (after the parameter procesing, 
 before `localSourceDir` and `localTargetDir` are assigned) and start copying 
 line-by-line from there, customizing commands as necessary. 
+
+The script `git-rewrite-history.sh` (from Emanuel Miller) can move files and directories within the same repository while preserving
+history. You can use that script independent of anything else... see the documentation at the top of that script if interested.
 
 ## Usage
 

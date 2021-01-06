@@ -152,7 +152,7 @@ As previously alluded to, most of the references on the web just describe how to
 to copy and paste. I created this script because I needed to move dozens of micro-services into a monorepo, so I wanted a repeatable 
 process. That doesn't mean you cannot either customize the script, or just use it as a reference and copy and paste from it into a Terminal.
 When I want to do this, I copy the first 12 or so lines that define the variables (and fill out the values I would normally specify
-as parameters to the script), then jump down to around line 30 (after the parameter procesing, 
+as parameters to the script), then jump down to around line 40 (after the parameter procesing, 
 before `localSourceDir` and `localTargetDir` are assigned) and start copying 
 line-by-line from there, customizing commands as necessary. 
 

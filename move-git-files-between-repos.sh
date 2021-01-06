@@ -13,7 +13,11 @@ targetDir=
 
 while [ "$1" ]; do
   case "$1" in
-    --help|-h) echo "See https://github.com/kevmurray/bash-move-git-files-with-history"; exit 0;;
+    --help|-h)
+        echo "See: https://github.com/kevmurray/bash-move-git-files-with-history for documentation"
+        open "https://github.com/kevmurray/bash-move-git-files-with-history"
+        exit 0
+        ;;
     --host=*) gitHost=${1#*=};;
     --branch=*) sourceBranch=${1#*=}; targetBranch=${1#*=};;
     --source-repo=*|--from-repo=*) sourceRepo=${1#*=};;
@@ -27,6 +31,11 @@ while [ "$1" ]; do
   esac
   shift
 done
+[ "$sourceRepo" ] || { echo "ERROR: required parameter --source-repo missing. Use --help for help." >>/dev/stderr; exit 9; }
+[ "$targetRepo" ] || { echo "ERROR: required parameter --target-repo missing. Use --help for help." >>/dev/stderr; exit 9; }
+[ "$targetDir" ] || { echo "ERROR: required parameter --target-dir missing. Use --help for help." >>/dev/stderr; exit 9; }
+
+
 
 localSourceDir="$(pwd)/${sourceRepo##*/}"
 localTargetDir="$(pwd)/${targetRepo##*/}"
